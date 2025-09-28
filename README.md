@@ -8,4 +8,5 @@ Bu proje, 30.000 satırlık kod hedefine ulaşan, x86 (32-bit) mimarisi üzerine
 - **Gelişmiş GUI:** Pionner Hub ve Fare Olay Yönetimi.
 - **Uygulamalar:** Phonexy AI (Durum Yönetimi), Pionner Tarayıcı (PPK Parser), Oyunlarım (Pong Fizik Motoru).
 - **Çekirdek Kararlılığı:** Çağrı Yığını Dökümü ve Yüksek Hassasiyetli Zamanlayıcı.
-- 
+
+  
