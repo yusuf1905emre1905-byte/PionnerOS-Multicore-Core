@@ -69,3 +69,65 @@ mouse_irq_handler_asm:
     out 0xA0, al            
     out 0x20, al            
     iret                        
+; =========================================================
+; PIONNEROS V2.0: DONANIM VE BAŞLATMA ASSEMBLY
+; BÖLÜM 47: ÇEKİRDEK BAŞLATMA VE KESME YÖNLENDİRMELERİ
+; =========================================================
+
+; Harici C fonksiyonları için bildiriler
+extern kernel_main
+extern pit_irq_handler
+extern keyboard_irq_handler
+extern mouse_irq_handler
+
+; --- ÇEKİRDEK GİRİŞ NOKTASI ---
+section .text
+global _start
+_start:
+    ; Yığın (Stack) Alanını Ayarla
+    mov esp, 0x90000        ; Yığını RAM'de bir konuma ayarla
+    
+    ; Segment Yazmaçlarını Başlat
+    mov ax, 0x10            ; Data segment selector
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+    ; C Fonksiyonu Çağrısı
+    call kernel_main        ; C kodundaki kernel_main fonksiyonunu çağır
+
+    ; Çekirdek sonu (kernel_main'den asla dönmemeliyiz, ama dönersek burada duralım)
+.halt:
+    cli                     ; Kesmeleri Kapat
+    hlt                     ; CPU'yu Durdur
+    jmp .halt               ; Sonsuz döngü
+
+; --- TEMEL KESME İŞLEYİCİLERİ ---
+; Bu iskeletler, donanım kesmeleri (IRQ) geldiğinde C fonksiyonlarınızı çağırır.
+
+; Zamanlayıcı (PIT) Kesmesi
+global irq0_handler
+irq0_handler:
+    call pit_irq_handler    ; C kodundaki pit_irq_handler'ı çağır
+    jmp pic_eoi             ; PIC'e Kesme Sonu (EOI) sinyali gönder
+
+; Klavye Kesmesi
+global irq1_handler
+irq1_handler:
+    call keyboard_irq_handler
+    jmp pic_eoi
+
+; Fare Kesmesi (IRQ 12)
+global irq12_handler
+irq12_handler:
+    call mouse_irq_handler
+    jmp pic_eoi
+
+; --- PIC KESME SONU (EOI) GÖNDERME İSKELETİ ---
+; 8259 PIC yongasına kesmeyi işlediğimizi bildirir.
+pic_eoi:
+    mov al, 0x20
+    out 0x20, al            ; Master PIC'e EOI gönder
+    ret
