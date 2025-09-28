@@ -53,3 +53,33 @@ extern void create_task(void (*entry_point)(), u32 stack_size);
 extern char sys_get_char();
 
 #endif
+void kernel_main() {
+    // 1. Temel başlatma (GDT, PIC, init_graphics, init_mouse, vs.)
+    
+    // Uygulamaları Pencereler Olarak Başlat (Tüm Uygulamalar Aynı Anda!)
+    puts("\n--- TUM UYGULAMA VIZYONLARI BASLATILIYOR ---\n");
+    
+    // 1. Pionner Hub
+    create_window(50, 50, 220, 150, draw_pionner_hub_content);
+
+    // 2. Phonexy Settings
+    create_window(300, 50, 250, 150, draw_phonexy_settings_content); 
+    
+    // 3. Oyunlarım
+    create_window(50, 220, 180, 100, draw_oyunlarim_content); 
+    
+    // 4. Pionner Tarayıcı
+    create_window(250, 220, 350, 200, draw_pionner_tarayici_content); 
+    
+    // 5. Phonexy AI
+    create_window(620, 50, 150, 200, draw_phonexy_ai_content); 
+
+    // create_task(shell_main, 4096); // Terminali ayrı bir görev olarak başlat.
+
+    // Ana döngüde pencereleri sürekli çiz
+    while(1) {
+        draw_windows(); // Tüm pencereler sürekli çizilir
+        // scheduler_switch_task(); // Çoklu Görev aktifse burada görev değişimi olur.
+    }
+}
+
