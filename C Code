@@ -1448,3 +1448,24 @@ i386-elf-gcc -T linker.ld -o kernel.bin kernel.o hw_kernel.o -ffreestanding -O2 
 # D) QEMU ile Sanal Makinede Çalıştır (GRUB ile)
 # GRUB, kernel.bin dosyanızı yükleyecektir.
 # qemu-system-i386 -kernel kernel.bin
+
+### ⚙️ Derleme ve Çalıştırma (QEMU Simülasyonu)
+
+**ÖN KOŞULLAR:**
+1.  i386-elf-gcc (Cross-Compiler)
+2.  NASM (Assembler)
+3.  QEMU (Sanal Makine Simülatörü)
+
+**ADIM 1: Derleme**
+```bash
+# 1. Assembly kodunu derle (hw_kernel.asm)
+i386-elf-as hw_kernel.asm -o hw_kernel.o
+
+# 2. C kodunu derle (kernel.c - Tüm 47 Bölüm)
+i386-elf-gcc -c kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I.
+
+# 3. Tüm objeleri linker.ld kullanarak birleştir (kernel.bin oluştur)
+i386-elf-gcc -T linker.ld -o kernel.bin kernel.o hw_kernel.o -ffreestanding -O2 -nostdlib
+
+# QEMU'yu başlat ve kernel.bin'i yükle
+qemu-system-i386 -kernel kernel.bin
