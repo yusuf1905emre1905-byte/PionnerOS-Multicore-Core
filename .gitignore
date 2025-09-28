@@ -1,0 +1,22 @@
+# =========================================================
+# PIONNEROS .gitignore
+# =========================================================
+
+# Derlenmiş Nesne Dosyaları (Oluşturulur)
+*.o
+*.bin
+*.elf
+
+# Yükleme (Boot) Dosyaları (Oluşturulur)
+*.iso
+*.img
+
+# QEMU / Sanallaştırma Geçici Dosyaları
+*.qcow2
+*.vdi
+vdisk/*
+
+# Sistem ve Editör Geçici Dosyaları
+*~
+*.swp
+.DS_Store
