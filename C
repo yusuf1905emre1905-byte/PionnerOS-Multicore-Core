@@ -1,0 +1,77 @@
+// =========================================================
+// PIONNEROS V2.0: FAT32 LİSTELEME FONKSİYONU (C Kodu)
+// BÖLÜM 25: FAT32 DİZİN OKUMA (Dosya Listeleme)
+// =========================================================
+
+// Harici Fonksiyonlar (Örn: ata_read_sector, putch, puts) varsayılıyor.
+extern void ata_read_sector(unsigned int lba, unsigned char *buffer); 
+extern unsigned int fat32_cluster_to_sector(unsigned int cluster); 
+
+// --- Dizin Girişi Yapısı (Daha önce tanımlanan) ---
+typedef struct {
+    char filename[8];           
+    char extension[3];          
+    unsigned char attributes;   // 0x10 = Klasör, 0x20 = Dosya
+    // ...
+    unsigned short first_cluster_low; 
+    unsigned int file_size;       
+} __attribute__((packed)) fat32_direntry_t;
+
+#define ATTR_DIRECTORY 0x10 // Klasör (Dizin) bayrağı
+
+// --- DİZİN LİSTELEME FONKSİYONU ---
+
+// Verilen cluster (küme) numarasından başlayarak dizindeki öğeleri okur.
+void list_directory(unsigned int start_cluster) {
+    
+    unsigned int current_sector = fat32_cluster_to_sector(start_cluster);
+    unsigned char sector_buffer[512];
+    
+    // Dizin okuma döngüsü (En az bir sektörü okumalıyız)
+    // Gerçekte, bir kümedeki tüm sektörler okunur.
+    
+    ata_read_sector(current_sector, sector_buffer); 
+    
+    // Sektör, 32 adet dizin girişini tutar (512 / sizeof(fat32_direntry_t) = 512/16 = 32)
+    fat32_direntry_t *entry = (fat32_direntry_t *)sector_buffer;
+
+    puts("Tip   Adı         Boyut\n");
+    puts("--------------------------------\n");
+    
+    for (int i = 0; i < 16; i++) { // Basitlik için ilk 16 girişi kontrol et
+        
+        // Dizin girişinin ilk baytı 0 ise, dizinin sonu veya boşluktur.
+        if (entry[i].filename[0] == 0x00) {
+            break; // Listenin sonu
+        }
+        
+        // Geçici dosya veya silinmiş girişi yoksay
+        if (entry[i].filename[0] == 0xE5) { 
+            continue;
+        }
+
+        // --- Tipi Yazdır ---
+        if (entry[i].attributes & ATTR_DIRECTORY) {
+            puts("[KLASOR] ");
+        } else {
+            puts("[DOSYA]  ");
+        }
+        
+        // --- Dosya Adını Yazdır (Boşlukları temizleyerek) ---
+        // (Bu kısım, put_padded_string gibi daha karmaşık bir çıktı fonksiyonu gerektirir)
+        for (int j = 0; j < 8; j++) {
+            if (entry[i].filename[j] == ' ') break;
+            putch(entry[i].filename[j]);
+        }
+        
+        // --- Uzantıyı Yazdır ---
+        if (!(entry[i].attributes & ATTR_DIRECTORY) && entry[i].extension[0] != ' ') {
+            putch('.');
+            putch(entry[i].extension[0]);
+            putch(entry[i].extension[1]);
+            putch(entry[i].extension[2]);
+        }
+        
+        puts("\n"); // Satır atla
+    }
+}
