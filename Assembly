@@ -1,0 +1,71 @@
+; =========================================================
+; PIONNEROS V2.0: HW_KERNEL.ASM (Tüm Assembly Kodları)
+; =========================================================
+
+; --- A. CONTEXT SWITCH MODÜLÜ (context_switch.asm) ---
+global context_switch 
+
+section .text
+context_switch:
+    ; 1. MEVCUT GÖREVİN KONTEKSİNİ KAYDET
+    pushad              
+    push ds ; Kayıtları yığına kaydet
+    push es             
+    push fs             
+    push gs             
+
+    ; Mevcut ESP'yi [esp + 52] ofsetindeki current_esp pointer'ına yaz
+    mov eax, [esp + 52] 
+    mov [eax], esp      
+
+    ; 2. YENİ GÖREVİN KONTEKSİNİ YÜKLE
+    ; ESP'yi, [esp + 56] ofsetindeki new_esp'ye ayarla
+    mov esp, [esp + 56] 
+
+    pop gs  ; Kayıtları yığından yükle
+    pop fs
+    pop es
+    pop ds
+    popad              
+
+    ; 3. GÖREVDEN ÇIKIŞ (Yeni görevi başlatır)
+    iret
+
+; --- B. İSTİSNA YAKALAMA ÇEKİRDEĞİ (exceptions.asm) ---
+
+; Dışarıdan C kodu tarafından çağrılacak hata işleyicisi
+extern exception_handler
+
+%macro EXCEPTION_HANDLER 1
+global exception_handler_%1
+exception_handler_%1:
+    push %1 
+    pusha                       
+    call exception_handler      ; C'deki fonksiyonu çağır
+    popa
+    add esp, 4                  
+    iret                        
+%endmacro
+
+; Zorunlu İstisnalar
+EXCEPTION_HANDLER 0 ; Division by Zero
+EXCEPTION_HANDLER 13 ; General Protection Fault (GPF)
+EXCEPTION_HANDLER 14 ; Page Fault
+
+; --- C. FARE KESME İŞLEYİCİSİ (mouse.asm) ---
+
+extern mouse_irq_handler
+global mouse_irq_handler_asm
+mouse_irq_handler_asm:
+    push byte 12            
+    pusha                   
+    call mouse_irq_handler  ; C'deki fonksiyonu çağır
+    popa
+    
+    add esp, 4              
+    
+    ; PIC'e Kesmeyi Sonlandır (EOI) sinyali
+    mov al, 0x20
+    out 0xA0, al            
+    out 0x20, al            
+    iret                        
