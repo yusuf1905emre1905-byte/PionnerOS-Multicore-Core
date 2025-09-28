@@ -1,0 +1,53 @@
+; =========================================================
+; PIONNEROS V2.0: CONTEXT SWITCH MODÜLÜ (context_switch.asm)
+; BÖLÜM 14: GÖREV DEĞİŞTİRME MEKANİZMASI (500 Satırlık Blok)
+; =========================================================
+
+; Harici olarak C kodu tarafından çağrılacak fonksiyonu tanımla
+global context_switch 
+
+; C'de bu fonksiyonun imzası şudur:
+; void context_switch(unsigned int current_esp, unsigned int new_esp);
+
+section .text
+context_switch:
+    ; ----------------------------------------------------
+    ; 1. MEVCUT GÖREVİN KONTEKSİNİ (REGISTERS) KAYDET
+    ; ----------------------------------------------------
+    ; EBP (Base Pointer) ve ESP (Stack Pointer) Assembly kodunda otomatik olarak yüklenir, 
+    ; ancak biz burada onları manuel olarak kaydetmek zorundayız.
+
+    ; 1.1. Genel Amaçlı Kayıtları Yığına Kaydet (PUSH)
+    pushad              ; EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI sırasıyla YIĞINA PUSH edilir
+
+    ; 1.2. Segment Kayıtlarını Kaydet
+    push ds             ; Veri Segmenti (Data Segment)
+    push es             ; Ekstra Segment
+    push fs             ; FS Segmenti
+    push gs             ; GS Segmenti
+
+    ; 1.3. Mevcut ESP'yi (Yığın İşaretçisi) current_task'a Kaydet
+    ; Fonksiyona gelen ilk argüman olan 'current_esp'in adresini [EBP+8] alırız.
+    mov eax, [esp + 52] ; EAX'e current_esp pointer'ını alıyoruz (Push edilenler yüzünden 52 offset)
+    mov [eax], esp      ; ESP'nin şimdiki değerini (kaydedilmiş kontext'in adresi) o adrese yazıyoruz.
+
+    ; ----------------------------------------------------
+    ; 2. YENİ GÖREVİN KONTEKSİNİ (REGISTERS) YÜKLE
+    ; ----------------------------------------------------
+    
+    ; 2.1. new_esp'yi (Yeni Görevin Yığın Adresi) ESP'ye Yükle
+    ; Fonksiyona gelen ikinci argüman olan 'new_esp'in adresini [EBP+12] alırız.
+    mov esp, [esp + 56] ; ESP'yi, new_esp'ye (yeni görevin kaydedilmiş konteks adresi) ayarla.
+
+    ; 2.2. Segment Kayıtlarını Yükle (PUSH'un tersi POP)
+    pop gs
+    pop fs
+    pop es
+    pop ds
+
+    ; 2.3. Genel Amaçlı Kayıtları Yükle
+    popad               ; EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX sırasıyla YIĞINDAN POP edilir.
+
+    ; 2.4. Fonksiyondan Çıkış (Görev şimdi değişti!)
+    ; C'den geldiğimiz adrese geri dönmek yerine, yeni görevin en son nerede kaldığını gösteren EIP'ye (Instruction Pointer) atlayacağız.
+    iret                ; Kesme dönüşü (Interrupt Return). Bu, EIP'yi, CS'yi ve EFLAGS'ı yığından otomatik olarak yükleyerek yeni görevi başlatır.
