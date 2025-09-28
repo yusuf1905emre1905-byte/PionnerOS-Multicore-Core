@@ -1,0 +1,55 @@
+// =========================================================
+// PIONNEROS V2.0: CORE_V2.H (Temel Header Dosyası)
+// =========================================================
+#ifndef CORE_V2_H
+#define CORE_V2_H
+
+// --- TEMEL VERİ TİPLERİ ---
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+typedef u32 size_t;
+
+// --- MULTITASKING (GÖREV) YAPILARI ---
+#define MAX_OPEN_FILES 10 
+
+// Assembly'nin kaydettiği İşlemci Konteksti
+typedef struct context {
+    u32 edi, esi, ebp, esp, ebx, edx, ecx, eax; // pusha
+    u32 eip, cs, eflags, useresp, ss;           // İşlemcinin otomatik kaydettikleri
+} context_t;
+
+// Dosya Tanımlayıcı (FD) İskeleti
+typedef struct file_descriptor {
+    int id;
+    void *fs; // Pointer to filesystem_t
+    // ...
+} file_descriptor_t;
+
+// Görev (Task / Process) Yapısı
+typedef struct task_t {
+    int id;
+    context_t context;
+    void *stack_base;
+    int state;
+    
+    file_descriptor_t *fd_table[MAX_OPEN_FILES];
+    
+    struct task_t *next;
+} task_t;
+
+// --- HARİCİ FONKSİYONLAR (DİĞER MODÜLLERDEN) ---
+extern void puts(const char *str);
+extern void putch(char c);
+extern void puthex(u32 n);
+extern void *malloc(size_t size);
+extern void free(void *ptr);
+
+// Assembly ve Kritik Çekirdek Fonksiyonları
+extern void context_switch(u32 *current_esp, u32 new_esp); // context_switch.asm
+extern u8 inb(u16 port);
+extern void outb(u16 port, u8 data);
+extern void create_task(void (*entry_point)(), u32 stack_size);
+extern char sys_get_char();
+
+#endif
