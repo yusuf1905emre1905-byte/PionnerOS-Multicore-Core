@@ -58,6 +58,22 @@ void kernel_main() {
     
     // Uygulamaları Pencereler Olarak Başlat (Tüm Uygulamalar Aynı Anda!)
     puts("\n--- TUM UYGULAMA VIZYONLARI BASLATILIYOR ---\n");
+/* linker.ld */
+ENTRY(kernel_main)                /* Çekirdeğin ana giriş noktası */
+SECTIONS {
+    . = 0x100000;                 /* Çekirdek kodunun RAM'de başlayacağı adres (1MB) */
+    .text : {                     /* Kod ve metin bölümü */
+        *(.text)
+        *(.rodata)
+    }
+    .data : {                     /* Başlatılmış veri bölümü */
+        *(.data)
+    }
+    .bss : {                      /* Başlatılmamış veri (sıfırlanacak) bölümü */
+        *(.bss)
+    }
+}
+
     
     // 1. Pionner Hub
     create_window(50, 50, 220, 150, draw_pionner_hub_content);
@@ -1420,3 +1436,15 @@ void draw_pionner_tarayici_content(window_t *win) {
     // ANA SAYFA İÇERİĞİNİ ÇİZ
     render_ppk_content(win, PIONNER_APP_MARKET_CONTENT);
 }
+# A) Assembly kodunu derle
+i386-elf-as hw_kernel.asm -o hw_kernel.o
+
+# B) C kodunu derle (Çapraz Derleyici kullanılmalı)
+i386-elf-gcc -c kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I.
+
+# C) Tüm objeleri Linker Script kullanarak birleştir
+i386-elf-gcc -T linker.ld -o kernel.bin kernel.o hw_kernel.o -ffreestanding -O2 -nostdlib
+
+# D) QEMU ile Sanal Makinede Çalıştır (GRUB ile)
+# GRUB, kernel.bin dosyanızı yükleyecektir.
+# qemu-system-i386 -kernel kernel.bin
